@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>INTERSTELLAR TIMER</title>
+
+<!---- GOOGLE FONTS -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+/* -------- RESET -------- */
+*{margin:0;padding:0;box-sizing:border-box}
+
+/* -------- ROOT -------- */
+:root{
+  --bg:#0d1117;
+  --panel:#161b22;
+  --border:#30363d;
+  --accent:#238636;
+  --accent-2:#1f6feb;
+  --text:#f0f6fc;
+  --sub:#7d8590;
+}
+
+/* -------- BODY -------- */
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  height:100vh;
+  overflow:hidden;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  /* parallax shift from JS */
+  transform:translate(var(--parallax-x,0),var(--parallax-y,0));
+  transition:transform .1s linear;
+}
+
+/* NEBULA-GRADIENT LAYER (existing) */
+body::before{
+  content:'';
+  position:fixed;inset:0;
+  background:
+    radial-gradient(circle at 20% 50%,rgba(35,134,54,.15)0%,transparent 50%),
+    radial-gradient(circle at 80% 20%,rgba(31,111,235,.15)0%,transparent 50%),
+    radial-gradient(circle at 40% 80%,rgba(210,153,34,.15)0%,transparent 50%);
+  animation:nebula 15s ease-in-out infinite;
+  z-index:-3;
+}
+@keyframes nebula{
+  0%,100%{transform:translateY(0) rotate(0deg);opacity:.6}
+  33%     {transform:translateY(-20px)rotate(1deg);opacity:.8}
+  66%     {transform:translateY(20px) rotate(-1deg);opacity:.4}
+}
+
+/* -------- STARFIELD CANVAS -------- */
+canvas#starfield{position:fixed;inset:0;z-index:-2;}
+
+/* -------- PLANETS -------- */
+.planet{
+  position:fixed;border-radius:50%;filter:blur(4px)brightness(1.2);
+  opacity:.8;pointer-events:none;z-index:-1;
+  animation:drift linear infinite;
+}
+@keyframes drift{
+  0%{transform:translateX(-15vw) translateY(0)}
+  100%{transform:translateX(115vw) translateY(-5vh)}
+}
+.planet.red{width:180px;height:180px;
+  background:radial-gradient(circle at 30% 30%,#ff7676 0%,#a10a0a 70%,#2d0000 100%);
+  bottom:15vh;left:-20vw;animation-duration:60s}
+.planet.blue{width:120px;height:120px;
+  background:radial-gradient(circle at 70% 20%,#89b3ff 0%,#0544d5 65%,#001537 100%);
+  top:10vh;left:-25vw;animation-duration:45s}
+
+/* -------- MAIN CARD -------- */
+.container{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:32px;max-width:800px;width:90%;
+  box-shadow:0 16px 32px rgba(1,4,9,.85),0 0 0 1px rgba(255,255,255,.05);
+  animation:cardIn .8s ease-out;
+  backdrop-filter:blur(10px);
+}
+@keyframes cardIn{0%{opacity:0;transform:translateY(20px)scale(.95)}
+100%{opacity:1;transform:translateY(0)scale(1)}}
+
+.header{text-align:center;margin-bottom:40px;animation:fadeUp 1s .2s both}
+.title{font-size:1.5rem;font-weight:600;letter-spacing:1px;margin-bottom:8px}
+.subtitle{font-size:.875rem;color:var(--sub)}
+
+@keyframes fadeUp{0%{opacity:0;transform:translateY(15px)}
+100%{opacity:1;transform:translateY(0)}}
+
+/* STATUS PANEL ------------------------------------------------ */
+.status-panel{
+  background:#0d1117;border:1px solid #21262d;border-radius:8px;
+  padding:16px;margin-bottom:24px;animation:fadeUp 1s .4s both;position:relative;
+}
+.status-panel::before{
+  content:'';position:absolute;top:0;left:-100%;width:100%;height:2px;
+  background:linear-gradient(90deg,transparent,var(--accent),transparent);
+  animation:loadBar 2s ease-in-out infinite;
+}
+@keyframes loadBar{0%{left:-100%}50%{left:100%}100%{left:100%}}
+.status-line{font-family:'JetBrains Mono',monospace;font-size:.75rem;
+  display:flex;align-items:center;margin-bottom:6px}
+.status-line:last-child{margin-bottom:0}
+.status-indicator{width:6px;height:6px;border-radius:50%;margin-right:8px;
+  animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.2);opacity:.7}}
+.status-success{background:var(--accent)}
+.status-warning{background:#d29922}
+.status-info   {background:var(--accent-2)}
+
+/* COUNTDOWN --------------------------------------------------- */
+.countdown-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-bottom:30px;
+  animation:fadeUp 1s .6s both
+}
+.time-unit{
+  background:#21262d;border:1px solid var(--border);border-radius:8px;
+  padding:20px 12px;text-align:center;position:relative;overflow:hidden;
+  transition:.3s cubic-bezier(.4,0,.2,1)
+}
+.time-unit:hover{border-color:#656d76;background:#262c36;transform:translateY(-2px);
+  box-shadow:0 8px 16px rgba(1,4,9,.5),0 0 0 1px rgba(255,255,255,.08)}
+.time-unit::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.1),transparent);
+  animation:shimmer 3s ease-in-out infinite
+}
+@keyframes shimmer{0%{transform:translateX(-100%)}50%,100%{transform:translateX(100%)}}
+.time-value{
+  font-family:'JetBrains Mono',monospace;font-size:2.25rem;font-weight:600;
+  animation:numGlow 2s ease-in-out infinite alternate;margin-bottom:8px
+}
+@keyframes numGlow{0%{text-shadow:0 0 5px rgba(240,246,252,.5)}
+100%{text-shadow:0 0 15px rgba(240,246,252,.8),0 0 25px rgba(240,246,252,.3)}}
+.time-label{font-size:.75rem;color:var(--sub);letter-spacing:.5px;font-weight:500}
+
+/* PROGRESS ---------------------------------------------------- */
+.progress-section{margin-bottom:20px;animation:fadeUp 1s .8s both}
+.progress-label{font-size:.75rem;color:var(--text);display:flex;justify-content:space-between;font-weight:500;margin-bottom:8px}
+.progress-bar{width:100%;height:4px;background:#21262d;border-radius:2px;overflow:hidden;position:relative}
+.progress-bar::before{
+  content:'';position:absolute;inset:0;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.1),transparent);
+  animation:progressShimmer 2s ease-in-out infinite
+}
+@keyframes progressShimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),#2ea043);
+  border-radius:2px;animation:progressFill 3s ease-in-out infinite}
+@keyframes progressFill{0%,100%{width:60%}50%{width:80%}}
+
+/* COMPLETE STATE --------------------------------------------- */
+.completed{animation:compPulse .6s ease-out}
+@keyframes compPulse{0%{transform:scale(1)}50%{transform:scale(1.05)}100%{transform:scale(1)}}
+.completed .time-value{color:var(--accent);animation:successGlow 1s ease-in-out infinite alternate}
+@keyframes successGlow{0%{text-shadow:0 0 10px rgba(35,134,54,.5)}
+100%{text-shadow:0 0 20px rgba(35,134,54,.8),0 0 30px rgba(35,134,54,.4)}}
+.completed .time-label,.completed .footer-status{color:var(--accent)}
+
+/* RESPONSIVE -------------------------------------------------- */
+@media(max-width:768px){
+  .container{padding:24px;width:95%}
+  .countdown-grid{grid-template-columns:repeat(2,1fr);gap:16px}
+  .time-value{font-size:2rem}.title{font-size:1.2rem}
+}
+@media(max-width:480px){
+  .countdown-grid{grid-template-columns:1fr;gap:12px}
+  .time-value{font-size:1.8rem}
+}
+</style>
+</head>
+<body>
+
+<!-- Starfield + planets (visual layers) -->
+<canvas id="starfield"></canvas>
+<div class="planet red"></div>
+<div class="planet blue"></div>
+
+<!---- MAIN UI CARD -->
+<div class="container">
+  <div class="header">
+    <div class="title">INTERSTELLAR TIMER</div>
+    <div class="subtitle">Mission Countdown System</div>
+  </div>
+
+  <div class="status-panel">
+    <div class="status-line"><span class="status-indicator status-success"></span>System initialization complete</div>
+    <div class="status-line"><span class="status-indicator status-success"></span>Mission parameters loaded</div>
+    <div class="status-line"><span class="status-indicator status-info"></span>Synchronizing with mission control</div>
+    <div class="status-line"><span class="status-indicator status-warning"></span>Countdown sequence active</div>
+  </div>
+
+  <div class="countdown-grid">
+    <div class="time-unit"><div id="days"    class="time-value">00</div><div class="time-label">days</div></div>
+    <div class="time-unit"><div id="hours"   class="time-value">00</div><div class="time-label">hours</div></div>
+    <div class="time-unit"><div id="minutes" class="time-value">00</div><div class="time-label">minutes</div></div>
+    <div class="time-unit"><div id="seconds" class="time-value">00</div><div class="time-label">seconds</div></div>
+  </div>
+
+  <div class="progress-section">
+    <div class="progress-label"><span>Mission Progress</span><span id="progStatus">Active</span></div>
+    <div class="progress-bar"><div class="progress-fill"></div></div>
+  </div>
+
+  <div class="footer-status">Mission countdown in progress</div>
+</div>
+
+<!---- SCRIPTS -->
+<script>
+/* ---------- COUNTDOWN ---------- */
+const targetDate = new Date("2025-12-31T23:59:59").getTime();
+function updateCountdown(){
+  const now = Date.now(),dist = targetDate - now;
+  const d=Math.floor(dist/8.64e7),
+        h=Math.floor(dist%8.64e7/3.6e6),
+        m=Math.floor(dist%3.6e6/6e4),
+        s=Math.floor(dist%6e4/1e3);
+  ["days","hours","minutes","seconds"].forEach((id,i)=>{
+     const val=[d,h,m,s][i];document.getElementById(id).textContent=String(val).padStart(2,"0");
+  });
+  if(dist<=0){
+     document.querySelectorAll('.time-unit').forEach(u=>u.classList.add('completed'));
+     document.querySelectorAll('.time-label').forEach(l=>l.textContent="complete");
+     document.querySelector('.footer-status').textContent="Mission complete";
+     document.getElementById('progStatus').textContent="Complete";
+     clearInterval(timer);
+  }
+}
+const timer=setInterval(updateCountdown,1000);updateCountdown();
+
+/* ---------- STARFIELD ---------- */
+const cvs=document.getElementById('starfield'),ctx=cvs.getContext('2d');
+let w,h,stars=[];
+function resize(){w=cvs.width=innerWidth;h=cvs.height=innerHeight}
+addEventListener('resize',resize);resize();
+function initStars(count=innerWidth<600?120:250){
+  stars=[...Array(count)].map(()=>({
+    x:Math.random()*w,
+    y:Math.random()*h,
+    z:Math.random()*.5+.5,
+    r:Math.random()*1.2+.2
+  }));
+}
+initStars();
+function starLoop(){
+  ctx.clearRect(0,0,w,h);
+  stars.forEach(s=>{
+    s.x-=.8*s.z;if(s.x<0)s.x=w;
+    ctx.beginPath();
+    ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+    ctx.fillStyle=`rgba(255,255,255,${s.z})`;ctx.fill();
+  });
+  requestAnimationFrame(starLoop);
+}
+starLoop();
+
+/* ---------- PARALLAX MOUSE ---------- */
+document.addEventListener('mousemove',e=>{
+  const x=(e.clientX/innerWidth-.5)*10,
+        y=(e.clientY/innerHeight-.5)*10;
+  document.body.style.setProperty('--parallax-x',x+'px');
+  document.body.style.setProperty('--parallax-y',y+'px');
+});
+</script>
+</body>
+</html>
